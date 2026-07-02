@@ -1,0 +1,63 @@
+# Canonical Dockerfile for an SSR/frontend Defra Node service (builds client assets
+# with Vite into .public). 3-stage build: development -> production_build -> production.
+#
+# Modernisation rules applied (vs old-style Dockerfiles):
+#   - Base image bumped to the current Defra base: 3.1.1-node24.18.0
+#   - NO `LABEL uk.gov.defra.ffc.parent-image=...` lines (removed)
+#   - `npm ci` (not `npm install`) in every stage
+#   - dev stage keeps `COPY --chown=node:node` but DROPS `--chmod=755`
+#   - `RUN npm run build:frontend` runs in the intermediate production_build stage
+#   - production stage copies with `--chown=root:root` (including `.public/`),
+#     then `chmod -R a-w /home/node` and switches to `USER node`
+#   - Set PORT/PORT_DEBUG ARGs to your service's ports.
+ARG PARENT_VERSION=3.1.1-node24.18.0
+ARG PORT=3000
+ARG PORT_DEBUG=9229
+
+FROM defradigital/node-development:${PARENT_VERSION} AS development
+
+ENV TZ="Europe/London"
+
+ARG PORT
+ARG PORT_DEBUG
+ENV PORT=${PORT}
+EXPOSE ${PORT} ${PORT_DEBUG}
+
+COPY --chown=node:node package*.json ./
+RUN npm ci
+COPY --chown=node:node . .
+RUN npm run build:frontend
+
+CMD [ "npm", "run", "dev" ]
+
+FROM development AS production_build
+
+ENV NODE_ENV=production
+
+RUN npm run build:frontend
+
+FROM defradigital/node:${PARENT_VERSION} AS production
+
+ENV TZ="Europe/London"
+
+# Add curl to template.
+# CDP PLATFORM HEALTHCHECK REQUIREMENT
+USER root
+RUN apk add --no-cache curl
+
+COPY --from=production_build --chown=root:root /home/node/package*.json ./
+COPY --from=production_build --chown=root:root /home/node/src ./src/
+COPY --from=production_build --chown=root:root /home/node/.public/ ./.public/
+
+RUN npm ci --omit=dev
+
+# Remove write permissions
+RUN chmod -R a-w /home/node
+
+USER node
+
+ARG PORT
+ENV PORT=${PORT}
+EXPOSE ${PORT}
+
+CMD [ "node", "src" ]

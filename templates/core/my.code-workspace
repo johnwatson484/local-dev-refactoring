@@ -1,0 +1,54 @@
+{
+  "folders": [
+    { "name": "my-backend", "path": "../my-backend" },
+    { "name": "my-frontend", "path": "../my-frontend" },
+    { "name": "my-admin", "path": "../my-admin" },
+    { "name": "my-core", "path": "." }
+  ],
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Local: Backend",
+        "type": "shell",
+        "command": "npm run local",
+        "options": { "cwd": "${workspaceFolder:my-backend}" },
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "group": "local", "panel": "dedicated", "reveal": "always" }
+      },
+      {
+        "label": "Local: Frontend",
+        "type": "shell",
+        "command": "npm run local",
+        "options": { "cwd": "${workspaceFolder:my-frontend}" },
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "group": "local", "panel": "dedicated", "reveal": "always" }
+      },
+      {
+        "label": "Local: Admin",
+        "type": "shell",
+        "command": "npm run local",
+        "options": { "cwd": "${workspaceFolder:my-admin}" },
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "group": "local", "panel": "dedicated", "reveal": "always" }
+      },
+      {
+        "label": "Local: Seed",
+        "type": "shell",
+        "command": "./seed",
+        "options": { "cwd": "${workspaceFolder:my-core}" },
+        "problemMatcher": [],
+        "presentation": { "group": "local", "panel": "dedicated", "reveal": "always" }
+      },
+      {
+        "label": "Local: Start all",
+        "dependsOn": ["Local: Backend", "Local: Frontend", "Local: Admin"],
+        "dependsOrder": "parallel",
+        "problemMatcher": []
+      }
+    ]
+  }
+}

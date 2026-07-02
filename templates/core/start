@@ -1,0 +1,56 @@
+#!/bin/bash
+# Canonical orchestration `start` script.
+#
+# Default (host-native, preferred): ensures deps for seeding are up, then points the
+# developer at the VS Code workspace task "Local: Start all" (each app runs
+# `npm run local`, bringing up its own dependency containers with hot reload).
+#
+# --docker: starts the FULL stack for every service via the `app` compose profile.
+# -s / --seed: seeds the database (host-native by default, or via container with --docker).
+
+set -e
+
+seed_database=false
+use_docker=false
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --docker) use_docker=true ;;
+    -s|--seed) seed_database=true ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Valid options:"
+      echo "  --docker      Run all apps in Docker (default: host-native)"
+      echo "  -s | --seed   Seed the database with fake data"
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+projectRoot="$(a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; cd "$a/.." || return; pwd)"
+
+if [ "$use_docker" = true ]; then
+  cd "${projectRoot}"; cd ./my-backend  && docker compose --profile app up -d
+  cd "${projectRoot}"; cd ./my-frontend && docker compose --profile app up -d
+  cd "${projectRoot}"; cd ./my-admin    && docker compose --profile app up -d
+
+  if [ "$seed_database" = true ]; then
+    cd "${projectRoot}"; ./my-core/seed --docker
+  fi
+else
+  if [ "$seed_database" = true ]; then
+    # Ensure deps are up before seeding (each app starts its own deps via npm run local)
+    cd "${projectRoot}"; cd ./my-backend && docker compose up -d
+    cd "${projectRoot}"; ./my-core/seed
+  fi
+
+  echo ""
+  echo "To start the apps host-native:"
+  echo ""
+  echo "  1. Open the workspace:  code ${projectRoot}/my-core/my.code-workspace"
+  echo "  2. Run the task:        Ctrl+Shift+P > Tasks: Run Task > Local: Start all"
+  echo ""
+  echo "Each app manages its own dependency containers via npm run local."
+  echo ""
+fi

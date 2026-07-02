@@ -1,0 +1,60 @@
+# Canonical compose.yml — Redis-backed service (session cache).
+# Single file; app gated behind `profiles: ["app"]`; Redis at the default profile.
+#
+# Usage:
+#   docker compose up -d                 # starts Redis ONLY (for `npm run services:up`)
+#   docker compose --profile app up -d   # starts Redis + app (orchestration repo)
+#
+# Substitutions when copying: replace `my-admin`/`my-backend`/`my-network` and ports.
+#
+# Two-layer env pattern:
+#   - env_file: .env  -> developer values (REDIS_HOST=localhost, cookie password, etc.)
+#   - environment:    -> overrides docker-internal hostnames (REDIS_HOST=redis, backend URL).
+#     `environment` wins over `env_file`.
+services:
+  my-admin:
+    profiles:
+      - app
+    build:
+      context: .
+      target: development
+    ports:
+      - '3003:3003'
+      - '9002:9229'
+    volumes:
+      - ./src:/home/node/src
+      - ./package.json:/home/node/package.json
+      - ./vite.config.js:/home/node/vite.config.js
+    env_file:
+      - .env
+    environment:
+      MY_BACKEND_ENDPOINT: http://my-backend:3001
+      REDIS_HOST: redis
+    networks:
+      - my-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --dir /data --save 5 1
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  my-network:
+    driver: bridge
+    name: my-network
+
+volumes:
+  redis_data:

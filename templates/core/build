@@ -1,0 +1,16 @@
+#!/bin/bash
+# Canonical orchestration `build` script. Builds the app image for each service using
+# the `app` compose profile (needed for --docker mode and journey tests).
+
+set -e
+
+projectRoot="$(a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; cd "$a/.." || return; pwd)"
+
+cd "${projectRoot}"
+cd ./my-backend && docker compose --profile app build
+
+cd "${projectRoot}"
+cd ./my-frontend && docker compose --profile app build
+
+cd "${projectRoot}"
+cd ./my-admin && docker compose --profile app build

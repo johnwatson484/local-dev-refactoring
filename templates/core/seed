@@ -1,0 +1,47 @@
+#!/bin/bash
+# Canonical orchestration `seed` script.
+#
+# Host-native (default): runs the seed script in the core repo against localhost.
+# --docker: copies the seed data into the running backend container and execs it there.
+#   The container is resolved via `docker compose ps -q <service>` (no hardcoded name).
+
+set -e
+
+use_docker=false
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --docker) use_docker=true ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Valid options:"
+      echo "  --docker    Seed by exec-ing into the running backend container"
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+projectRoot=$(a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; cd "$a/.." || return; pwd)
+
+cd "${projectRoot}"
+
+if [ "$use_docker" = true ]; then
+  containerId=$(cd ./my-backend && docker compose ps -q my-backend)
+
+  if [ -z "${containerId}" ]; then
+    echo "Error: my-backend container is not running. Start it first with ./start --docker"
+    exit 1
+  fi
+
+  docker cp my-core/data "${containerId}":/tmp/data
+  docker cp my-core/package.json "${containerId}":/tmp/package.json
+
+  echo "Seeding database (via container)..."
+  docker exec "${containerId}" sh -c "cd /tmp && npm install && npm run seed"
+else
+  echo "Seeding database (host-native, localhost)..."
+  cd ./my-core && npm run seed
+fi
+
+echo "Database seeded successfully"

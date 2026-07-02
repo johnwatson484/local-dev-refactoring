@@ -1,0 +1,21 @@
+#!/bin/bash
+# Canonical orchestration `clone` script. Clones each sibling service repo next to
+# the core repo (skips any that already exist). Add/remove repos as needed.
+
+set -e
+
+projectRoot=$(a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; cd "$a/.." || return; pwd)
+
+cd "${projectRoot}"
+
+test -d my-backend \
+  && >&2 echo "my-backend repository already exists. Skipping." \
+  || git clone https://github.com/DEFRA/my-backend.git
+
+test -d my-frontend \
+  && >&2 echo "my-frontend repository already exists. Skipping." \
+  || git clone https://github.com/DEFRA/my-frontend.git
+
+test -d my-admin \
+  && >&2 echo "my-admin repository already exists. Skipping." \
+  || git clone https://github.com/DEFRA/my-admin.git

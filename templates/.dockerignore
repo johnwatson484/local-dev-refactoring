@@ -1,0 +1,13 @@
+# Canonical .dockerignore for Defra Node services.
+#
+# Keep the image lean and never leak local env into a built image.
+#   - `.public` is the Vite build output; the Dockerfile rebuilds it, so exclude it
+#     for SSR repos. Omit the line for API-only repos (they have no .public).
+#   - `**/*.test.js` excludes test files from the image.
+#   - `.env` MUST be excluded so local secrets never get baked into an image.
+node_modules
+Dockerfile
+coverage
+.public
+**/*.test.js
+.env

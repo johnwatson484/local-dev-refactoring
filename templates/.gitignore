@@ -1,0 +1,30 @@
+# Canonical .gitignore for Defra Node services.
+#
+# Notes:
+#   - `.vscode/*` is ignored EXCEPT launch.json and tasks.json, which are committed
+#     so the whole team shares the same run/debug config. (settings.json is ignored
+#     here; some repos commit it instead to pin the SonarLint project key — see below.)
+#   - `.public` is the Vite build output; keep it ONLY for repos that build client
+#     assets. Remove the line for API-only repos.
+#   - `.sonarlint/` must be ignored (SonarLint connected-mode cache, machine-local).
+#   - `keys/` only applies to services that generate/persist local auth keys
+#     (e.g. the Defra ID stub). Omit it otherwise.
+.DS_Store
+.npm/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea
+.public
+node_modules
+npm-debug.log
+coverage
+.cache
+.eslintcache
+.envrc
+tsconfig.tsbuildinfo
+.env
+.sonarlint/
+
+# Auth-key services only (e.g. Defra ID stub) — omit if not applicable:
+# keys/

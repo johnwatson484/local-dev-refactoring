@@ -1,0 +1,77 @@
+# Canonical compose.yml — Postgres-backed service with Liquibase migrations.
+# Single file; app gated behind `profiles: ["app"]`; Postgres + Liquibase at the
+# default profile so `docker compose up -d` gives a migrated DB for host-native dev.
+#
+# Usage:
+#   docker compose up -d                 # starts Postgres + Liquibase ONLY (services:up)
+#   docker compose --profile app up -d   # starts Postgres + Liquibase + app
+#
+# Substitutions when copying: replace `my-backend`/`my_db`/`my-network` and ports.
+#
+# NOTE: for Postgres the docker-internal hostnames are set via `environment:` on the
+# app service (POSTGRES_HOST=postgres). Liquibase runs migrations on startup so the DB
+# is schema-ready for host-native `npm run dev`.
+services:
+  my-backend:
+    profiles:
+      - app
+    build:
+      context: .
+      target: development
+    ports:
+      - '3001:3001'
+      - '9001:9229'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      liquibase:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_HOST_READ: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_GET_TOKEN_FROM_RDS: false
+    volumes:
+      - ./src:/home/node/src
+      - ./package.json:/home/node/package.json
+    networks:
+      - my-network
+
+  postgres:
+    image: postgres:16.6
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: my_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d my_db"]
+      interval: 10s
+      retries: 5
+      start_period: 1s
+      timeout: 10s
+
+  liquibase:
+    image: liquibase/liquibase:4
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./changelog:/liquibase/changelog
+    networks:
+      - my-network
+    command: --url=jdbc:postgresql://postgres:5432/my_db --username=postgres --password=postgres --changelog-file=changelog/db.changelog.xml update
+
+networks:
+  my-network:
+    driver: bridge
+    name: my-network
+
+volumes:
+  postgres_data:

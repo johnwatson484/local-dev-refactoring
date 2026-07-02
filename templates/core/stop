@@ -1,0 +1,32 @@
+#!/bin/bash
+# Canonical orchestration `stop` script.
+#
+# Default: stops dependency containers only (the ones started by each app's
+# `npm run services:up`).
+# --docker: brings down the full app stack (via the `app` profile) for every service.
+# Extra args (e.g. -v to remove volumes) are passed through to docker compose.
+
+set -e
+
+use_docker=false
+extra_args=()
+
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    --docker) use_docker=true ;;
+    *) extra_args+=("$1") ;;
+  esac
+  shift
+done
+
+projectRoot="$(a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; cd "$a/.." || return; pwd)"
+
+if [ "$use_docker" = true ]; then
+  cd "${projectRoot}"; cd ./my-backend  && docker compose --profile app down "${extra_args[@]}"
+  cd "${projectRoot}"; cd ./my-frontend && docker compose --profile app down "${extra_args[@]}"
+  cd "${projectRoot}"; cd ./my-admin    && docker compose --profile app down "${extra_args[@]}"
+else
+  # Stop dependency containers only
+  cd "${projectRoot}"; cd ./my-backend && docker compose down "${extra_args[@]}"
+  cd "${projectRoot}"; cd ./my-admin   && docker compose down "${extra_args[@]}"
+fi
