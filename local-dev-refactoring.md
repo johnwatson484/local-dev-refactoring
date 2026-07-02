@@ -36,6 +36,7 @@ only the files here plus the linked PRs — no need to have the reference repos 
 | Lint | [`eslint.config.js`](./templates/eslint.config.js) (API + SSR variants) |
 | Ignore files | [`.gitignore`](./templates/.gitignore), [`.dockerignore`](./templates/.dockerignore) |
 | Env | [`.env.example`](./templates/.env.example) |
+| SonarCloud | [`sonar-project.properties`](./templates/sonar-project.properties) |
 | Docker image | [`Dockerfile.api`](./templates/Dockerfile.api), [`Dockerfile.ssr`](./templates/Dockerfile.ssr) |
 | Compose | [`compose.no-deps.yml`](./templates/compose.no-deps.yml), [`compose.redis.yml`](./templates/compose.redis.yml), [`compose.postgres.yml`](./templates/compose.postgres.yml) |
 | Vite | [`vite.config.js`](./templates/vite.config.js) |
@@ -467,6 +468,12 @@ if it has no bundler, add Vite. Copy [`templates/vite.config.js`](./templates/vi
   CDP versioning uses git tags via `anothrNick/github-tag-action`.
 - **Remove `.sonarlint/`**: delete the `.sonarlint/connectedMode.json` file, add `.sonarlint/`
   to `.gitignore`, and move the project key into `.vscode/settings.json` (Step 6).
+- **`sonar-project.properties`** ([template](./templates/sonar-project.properties)): copy the
+  template and replace `<org>` with the GitHub org name, `<org-lowercase>` with the SonarCloud
+  org slug (typically the lowercase version), and `<repo-name>` with the repo name. Remove any
+  old setup comment block (instructions to uncomment CI workflow steps) if present — those are
+  handled separately. The `sonar.projectKey` value (`<org>_<repo-name>`) MUST match the key set
+  in `.vscode/settings.json` `sonarlint.connectedMode.project`.
 - **`.gitignore`** ([template](./templates/.gitignore)) and **`.dockerignore`**
   ([template](./templates/.dockerignore)): ensure `.env` is ignored in both; `.public` is
   ignored for SSR repos (omit for API-only); `.dockerignore` also excludes `node_modules`,
@@ -587,6 +594,7 @@ Tick each item as you convert a repo. Skip rows that don't apply (e.g. Vite/Post
 - [ ] **Husky removed** (`.husky/` + devDep + prepare/postinstall + `git:pre-commit-hook`).
 - [ ] **`postversion` removed**.
 - [ ] **`.sonarlint/` removed** + gitignored; key moved to `.vscode/settings.json` (Step 6/11).
+- [ ] **`sonar-project.properties`** present, no old setup comment block, `sonar.projectKey` = `<org>_<repo-name>`, matches `.vscode/settings.json` key (Step 11 / [`sonar-project.properties`](./templates/sonar-project.properties)).
 - [ ] **`.vscode/`** has launch.json + tasks.json + settings.json (Step 6 / [`vscode/`](./templates/vscode/)).
 - [ ] **nodemon replaced** by `node --watch`.
 - [ ] **ESLint** = neostandard + `curly: ['error','all']` (Step 12 / [`eslint.config.js`](./templates/eslint.config.js)).
